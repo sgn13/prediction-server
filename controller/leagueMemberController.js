@@ -17,7 +17,7 @@ exports.getLeagueMembers = async (req, res, next) => {
     //     const members = await LeagueMemberModal.find({ leagueId })
     // .populate("userId", "username full_name")
     // .sort({ totalPoints: -1 });
-    console.log({ leagueMembers });
+    // console.log({ leagueMembers });
     const formatted = leagueMembers.map((member) => ({
       id: member._id,
       username: member.userId.username,
@@ -25,7 +25,7 @@ exports.getLeagueMembers = async (req, res, next) => {
       totalPoints: member.totalPoints,
       role: member.role,
     }));
-    console.log({ formatted });
+    // console.log({ formatted });
 
     res.status(200).json({
       total: leagueMembers.length,

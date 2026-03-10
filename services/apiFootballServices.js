@@ -9,14 +9,17 @@ const axios = require("axios");
  */
 const fetchFixturesFromApi = async (leagueId, season) => {
   try {
-    const response = await axios.get("https://v3.football.api-sports.io/fixtures", {
-      params: { date: "2026-02-28" },
-      headers: { "x-apisports-key": "7ace331b4f8fce01db479ea8d7eeec3e" },
+    const response = await axios.get("https://api.football-data.org/v4/matches", {
+      params: {
+        competitions: "2021",
+        dateFrom: "2026-03-11",
+        dateTo: "2026-03-19",
+      },
+      headers: { "X-Auth-Token": "8dc5c264c4fa44a4aecd28169e5f3605" },
     });
-    console.log({ response });
 
     // API response has the fixtures inside response.data.response
-    return response.data.response;
+    return response;
   } catch (err) {
     console.error("Error fetching fixtures:", err.message);
     return [];

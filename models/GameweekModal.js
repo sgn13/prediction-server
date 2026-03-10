@@ -3,7 +3,7 @@ const Mongoose = require("mongoose");
 
 const GameweekSchema = new Mongoose.Schema(
   {
-    api_football_league_id: {
+    api_league_id: {
       type: Number,
       required: true,
       index: true,
@@ -39,7 +39,7 @@ const GameweekSchema = new Mongoose.Schema(
 );
 
 // Prevent duplicate gameweek for same league + season + round
-GameweekSchema.index({ api_football_league_id: 1, season: 1, round_number: 1 }, { unique: true });
+GameweekSchema.index({ api_league_id: 1, season: 1, round_number: 1 }, { unique: true });
 
 const Gameweek = Mongoose.models.Gameweek || Mongoose.model("Gameweek", GameweekSchema);
 

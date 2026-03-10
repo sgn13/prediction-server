@@ -6,52 +6,57 @@ const Fixture = require("../models/FixtureModal");
  * @param {Array} apiResponse API response array from football API
  */
 async function storeApiFixtures(apiResponse) {
+  console.log({ apiResponse });
   for (const item of apiResponse) {
-    const { fixture, league, teams, goals } = item;
+    const matchday = item.matchday;
 
-    // --- 1️⃣ Handle Gameweek ---
-    const roundNumberMatch = league.round?.match(/\d+$/);
-    const roundNumber = roundNumberMatch ? parseInt(roundNumberMatch[0]) : 1;
-
+    // Find or create Gameweek
     let gameweek = await Gameweek.findOne({
-      api_football_league_id: league.id,
-      season: league.season,
-      round_number: roundNumber,
+      api_league_id: item.competition.id,
+      // season: item.season.id,
+      round_number: matchday,
     });
 
-    if (!gameweek) {
-      gameweek = await Gameweek.create({
-        api_football_league_id: league.id,
-        season: league.season,
-        round_number: roundNumber,
-        round_name: league.round,
-      });
-    }
+    // if (!gameweek) {
+    //   gameweek = await Gameweek.create({
+    //     api_league_id: item.competition.id,
+    //     season: item.season.id,
+    //     matchday: matchday,
+    //     round_name: `Matchday ${matchday}`,
+    //   });
+    // }
 
-    // --- 2️⃣ Handle Fixture ---
     await Fixture.updateOne(
-      { api_football_fixture_id: fixture.id },
+      { api_fixture_id: item.id },
       {
         $set: {
-          api_football_league_id: league.id,
-          season: league.season,
+          api_league_id: item.competition.id,
+          season: item.season.id,
+          matchday: matchday,
           gameweek_id: gameweek._id,
-          home_team_name: teams.home.name,
-          away_team_name: teams.away.name,
-          kickoff_at: fixture.date,
-          status_short: fixture.status.short,
-          home_score: goals.home,
-          away_score: goals.away,
+
+          home_team_id: item.homeTeam.id,
+          away_team_id: item.awayTeam.id,
+
+          home_team_name: item.homeTeam.shortName,
+          away_team_name: item.awayTeam.shortName,
+
+          kickoff_at: new Date(item.utcDate),
+
+          status: item.status,
+
+          home_score: item.score?.fullTime?.home ?? 0,
+          away_score: item.score?.fullTime?.away ?? 0,
+
           isActive: true,
         },
       },
-      { upsert: true }, // create if doesn't exist
+      { upsert: true },
     );
   }
 
   console.log("Fixtures imported successfully!");
 }
-
 async function getFixturesByGameweek(req, res) {
   try {
     const { gameweekId } = req.query;

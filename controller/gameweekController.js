@@ -110,10 +110,8 @@ exports.getGameweeks = async (req, res) => {
     const userId = req.user; // from auth middleware
     const gameweeks = await Gameweek.find();
 
-    console.log({ gameweeks });
-    const formatted = gameweeks?.filter(
-      (gameweek) => gameweek?.api_football_league_id === 39 && gameweek?.season === 2025,
-    );
+    // console.log({ gameweeks });
+    const formatted = gameweeks?.filter((gameweek) => gameweek?.season === 2025);
 
     res.status(200).json({ data: formatted });
   } catch (error) {

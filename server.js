@@ -8,11 +8,13 @@ const userRoutes = require("./routes/userRoutes");
 const leagueMemberRoutes = require("./routes/leagueMemberRoutes");
 const fixtureRoutes = require("./routes/fixtureRoutes");
 const gameweekRoutes = require("./routes/gameweekRoutes");
+const leagueMatchRoutes = require("./routes/leagueMatchRoutes");
 const axios = require("axios");
 const Gameweek = require("./models/GameweekModal");
 const Fixture = require("./models/FixtureModal");
 const { fetchFixturesFromApi } = require("./services/apiFootballServices");
 const { storeApiFixtures } = require("./controller/fixtureController");
+const { assignOneMatchPerLeague } = require("./services/gameweekAssignmentServices");
 
 const app = express();
 const port = 8000;
@@ -28,6 +30,7 @@ app.use("/api/v1/league", leagueRoutes);
 app.use("/api/v1/league", leagueMemberRoutes);
 app.use("/api/v1/fixture", fixtureRoutes);
 app.use("/api/v1/gameweek", gameweekRoutes);
+app.use("/api/v1/leaguematches", leagueMatchRoutes);
 
 app.all("*", (req, res, next) => {
   res.status(404).json({
@@ -38,42 +41,6 @@ app.all("*", (req, res, next) => {
 
 const API_KEY = "7ace331b4f8fce01db479ea8d7eeec3e";
 const API_BASE = "https://v3.football.api-sports.io";
-
-// async function fetchGameweeks(leagueId, season) {
-//   try {
-//     const { data } = await axios.get(`${API_BASE}/fixtures/rounds`, {
-//       params: { league: leagueId, season },
-//       headers: { "x-apisports-key": API_KEY },
-//     });
-
-//     const rounds = data.response; // array of strings like "Regular Season - 25"
-
-//     for (const roundName of rounds) {
-//       // extract number from "Regular Season - 25"
-//       const match = roundName.match(/\d+/);
-//       const roundNumber = match ? Number(match[0]) : 1;
-
-//       // upsert gameweek
-//       await Gameweek.findOneAndUpdate(
-//         { api_football_league_id: leagueId, season, round_number: roundNumber },
-//         {
-//           round_name: roundName,
-//           api_football_league_id: leagueId,
-//           season,
-//           round_number: roundNumber,
-//         },
-//         { upsert: true, new: true },
-//       );
-//     }
-
-//     console.log("Gameweeks synced ✅");
-//   } catch (err) {
-//     console.error("Error fetching gameweeks:", err.response?.data || err.message);
-//   }
-// }
-
-// // Usage
-// fetchGameweeks(39, 2024);
 
 // async function fetchFixturesForGameweek(leagueId, season, roundName) {
 //   try {
@@ -94,7 +61,7 @@ const API_BASE = "https://v3.football.api-sports.io";
 
 //       // get or create gameweek
 //       const gameweek = await Gameweek.findOne({
-//         api_football_league_id: leagueId,
+//         api_league_id: leagueId,
 //         season,
 //         round_number: roundNumber,
 //       });
@@ -102,8 +69,8 @@ const API_BASE = "https://v3.football.api-sports.io";
 //       if (!gameweek) continue;
 
 //       const fixtureData = {
-//         api_football_fixture_id: f.fixture.id,
-//         api_football_league_id: leagueId,
+//         api_fixture_id: f.fixture.id,
+//         api_league_id: leagueId,
 //         season,
 //         gameweek_id: gameweek._id,
 //         home_team_name: f.teams.home.name,
@@ -116,7 +83,7 @@ const API_BASE = "https://v3.football.api-sports.io";
 
 //       console.log({ fixtureData });
 
-//       await Fixture.findOneAndUpdate({ api_football_fixture_id: f.fixture.id }, fixtureData, {
+//       await Fixture.findOneAndUpdate({ api_fixture_id: f.fixture.id }, fixtureData, {
 //         upsert: true,
 //         new: true,
 //       });
@@ -137,11 +104,9 @@ const fetchAndStoreFixturesManually = async () => {
     ];
 
     for (const league of leagues) {
-      console.log(`Fetching fixtures for league ${league.id} season ${league.season}`);
       const apiResponse = await fetchFixturesFromApi(league.id, league.season);
-      console.log({ apiResponse }, "==========>>>>");
-      if (apiResponse.length > 0) {
-        await storeApiFixtures(apiResponse);
+      if (apiResponse.data?.matches.length > 0) {
+        await storeApiFixtures(apiResponse.data?.matches);
       }
     }
 
@@ -152,6 +117,8 @@ const fetchAndStoreFixturesManually = async () => {
 };
 
 // fetchAndStoreFixturesManually();
+
+// assignOneMatchPerLeague();
 
 // Usage
 // fetchFixturesForGameweek(39, 2025, "Regular Season - 26");
