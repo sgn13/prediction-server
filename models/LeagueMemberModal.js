@@ -23,7 +23,6 @@ const LeagueMemberSchema = new mongoose.Schema(
 
     silverPoints: { type: Number, default: 0 },
     goldPoints: { type: Number, default: 0 },
-    premiumPoints: { type: Number, default: 0 },
 
     totalPoints: { type: Number, default: 0 },
 

@@ -1,5 +1,8 @@
 const LeagueMemberModal = require("../models/LeagueMemberModal");
 const APIFeatures = require("../utils/apiFeatures");
+const PredictionModal = require("../models/PredictionModal");
+const FixtureModal = require("../models/FixtureModal");
+const mongoose = require("mongoose");
 
 // Get all members of a league
 exports.getLeagueMembers = async (req, res, next) => {
@@ -101,5 +104,86 @@ exports.leaveLeague = async (req, res, next) => {
     res.status(200).json({ message: "Left league successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getLeagueLeaderboard = async (req, res) => {
+  try {
+    const { leagueId } = req.params;
+    const { gameweek_id } = req.query;
+
+    // get all league members
+    const members = await LeagueMemberModal.find({ leagueId }).populate(
+      "userId",
+      "username full_name",
+    );
+    // if no gameweek → return overall table
+    if (!gameweek_id) {
+      const sorted = members.sort((a, b) => b.totalPoints - a.totalPoints);
+      const formatted = sorted.map((member) => ({
+        ...member,
+        id: member._id,
+        username: member.userId.username,
+        full_name: member.userId.full_name,
+        totalPoints: member.totalPoints,
+        role: member.role,
+      }));
+
+      return res.status(200).json({
+        data: formatted,
+      });
+    }
+
+    // get fixtures for that gameweek
+    const fixtures = await FixtureModal.find({
+      gameweek_id: gameweek_id,
+    });
+    console.log(fixtures, "fixtures");
+    const fixtureIds = fixtures.map((f) => f._id);
+
+    // get predictions for that gameweek
+    const predictions = await PredictionModal.find({
+      fantasy_league_id: leagueId,
+      fixture_id: { $in: fixtureIds },
+    });
+
+    // calculate user points map
+    const userPoints = {};
+
+    for (const p of predictions) {
+      const userId = p.user_id.toString();
+
+      if (!userPoints[userId]) {
+        userPoints[userId] = 0;
+      }
+
+      userPoints[userId] += p.points || 0;
+    }
+    console.log({ userPoints, predictions });
+    // attach points to every league member
+
+    const leaderboard = members.map((m) => ({
+      user: m.userId.name,
+      userId: m.userId._id,
+      points: userPoints[m.userId._id.toString()] || 0,
+      id: m._id,
+      username: m.userId.username,
+      full_name: m.userId.full_name,
+      totalPoints: m.totalPoints,
+      role: m.role,
+    }));
+
+    // sort leaderboard
+    leaderboard.sort((a, b) => b.points - a.points);
+
+    res.status(200).json({
+      // total: leagueMembers.length,
+      data: leaderboard,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Error fetching leaderboard",
+    });
   }
 };

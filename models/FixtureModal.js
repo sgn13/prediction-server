@@ -65,7 +65,10 @@ const FixtureSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
+    predictions_processed: {
+      type: Boolean,
+      default: false,
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -9,12 +9,15 @@ const leagueMemberRoutes = require("./routes/leagueMemberRoutes");
 const fixtureRoutes = require("./routes/fixtureRoutes");
 const gameweekRoutes = require("./routes/gameweekRoutes");
 const leagueMatchRoutes = require("./routes/leagueMatchRoutes");
+const predictionRoutes = require("./routes/predictionRoutes");
 const axios = require("axios");
 const Gameweek = require("./models/GameweekModal");
 const Fixture = require("./models/FixtureModal");
 const { fetchFixturesFromApi } = require("./services/apiFootballServices");
 const { storeApiFixtures } = require("./controller/fixtureController");
 const { assignOneMatchPerLeague } = require("./services/gameweekAssignmentServices");
+const processFixturePredictions = require("./services/processFixtureServices");
+const cron = require("node-cron");
 
 const app = express();
 const port = 8000;
@@ -31,12 +34,26 @@ app.use("/api/v1/league", leagueMemberRoutes);
 app.use("/api/v1/fixture", fixtureRoutes);
 app.use("/api/v1/gameweek", gameweekRoutes);
 app.use("/api/v1/leaguematches", leagueMatchRoutes);
+app.use("/api/v1/prediction", predictionRoutes);
 
 app.all("*", (req, res, next) => {
   res.status(404).json({
     status: "Fail",
     message: `Can't find ${req.originalUrl} on this server!`,
   });
+});
+
+cron.schedule("*/30 * * * *", async () => {
+  const fixtures = await Fixture.find({
+    status: "FINISHED",
+    predictions_processed: false,
+  });
+
+  for (const fixture of fixtures) {
+    await processFixturePredictions(fixture._id);
+
+    await Fixture.updateOne({ _id: fixture._id }, { predictions_processed: true });
+  }
 });
 
 const API_KEY = "7ace331b4f8fce01db479ea8d7eeec3e";
