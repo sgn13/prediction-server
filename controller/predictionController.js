@@ -9,7 +9,6 @@ exports.createOrUpdatePrediction = async (req, res) => {
 
     // Check fixture
     const fixture = await Fixture.findById(fixture_id);
-    console.log({ fixture, fixture_id });
 
     if (!fixture) {
       return res.status(404).json({
@@ -55,14 +54,12 @@ exports.getPredictions = async (req, res) => {
   try {
     const user_id = req.user;
     const { fantasy_league_id, gameweek_id } = req.query;
-    console.log({ user_id, fantasy_league_id, gameweek_id });
 
     const predictions = await Prediction.find({
       user_id,
       fantasy_league_id,
     });
 
-    console.log({ predictions });
     const filtered = predictions.filter((p) => p.fixture_id !== null);
 
     return res.status(200).json({

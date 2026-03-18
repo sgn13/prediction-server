@@ -48,7 +48,7 @@ cron.schedule("*/30 * * * *", async () => {
     status: "FINISHED",
     predictions_processed: false,
   });
-
+  console.log({ fixtures });
   for (const fixture of fixtures) {
     await processFixturePredictions(fixture._id);
 

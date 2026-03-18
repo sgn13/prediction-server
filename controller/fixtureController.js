@@ -6,7 +6,6 @@ const Fixture = require("../models/FixtureModal");
  * @param {Array} apiResponse API response array from football API
  */
 async function storeApiFixtures(apiResponse) {
-  console.log({ apiResponse });
   for (const item of apiResponse) {
     const matchday = item.matchday;
 
@@ -60,7 +59,6 @@ async function storeApiFixtures(apiResponse) {
 async function getFixturesByGameweek(req, res) {
   try {
     const { gameweekId } = req.query;
-    console.log({ gameweekId, req: req.query });
     const fixtures = await Fixture.find({
       gameweek_id: gameweekId,
     }).sort({ kickoff_at: 1 });

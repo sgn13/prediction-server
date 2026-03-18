@@ -6,12 +6,14 @@ const {
   userController,
   verifyEmail,
   userProfileController,
+  verifyOTPController,
 } = require("../controller/authController");
 
 const router = express.Router();
 
 router.post("/register", registerController);
 router.get("/verify/:token", verifyEmail);
+router.post("/otp", verifyOTPController);
 router.post("/login", loginController);
 router.get("/", userController);
 router.get("/profile/", authMiddleware, userProfileController);

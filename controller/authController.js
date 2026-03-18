@@ -7,7 +7,33 @@ const crypto = require("crypto");
 
 const nodemailer = require("nodemailer");
 
-async function sendVerificationEmail(email, token) {
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+const addUserToGlobalLeague = async (userId) => {
+  const globalLeague = await League.findOne({ type: "GLOBAL" });
+
+  if (!globalLeague) {
+    throw new Error("Global league not found");
+  }
+
+  // Prevent duplicate entry
+  const existing = await LeagueMember.findOne({
+    userId,
+    leagueId: globalLeague._id,
+  });
+
+  if (!existing) {
+    await LeagueMember.create({
+      userId,
+      leagueId: globalLeague._id,
+      role: "MEMBER",
+    });
+  }
+};
+
+async function sendVerificationEmail(email, verificationToken, otp) {
   // const transporter = nodemailer.createTransport({
   //   service: "Gmail", // or your preferred email service
   //   auth: {
@@ -26,12 +52,20 @@ async function sendVerificationEmail(email, token) {
     },
   });
 
-  const url = `http://localhost:5173/verify/${token}`;
+  const url = `http://localhost:5173/verify/${verificationToken}`;
   const mailOptions = {
-    from: "your-email@gmail.com",
+    from: "crazyprediction@gmail.com",
     to: email,
     subject: "Verify your account",
-    html: `<h1>Welcome!</h1><p>Click <a href="${url}">here</a> to verify your account.</p>`,
+    html: `
+  <h1>Welcome!</h1>
+  <p>We're excited to have you on board.</p>
+  <p>Please click <a href="${url}">here</a> to verify your account.</p>
+  <p>Or use the verification code below:</p>
+  <h2>${otp}</h2>
+  <p>This code will expire in 10 minutes.</p>
+  <p>If you didn’t create this account, you can safely ignore this email.</p>
+`,
   };
 
   await transporter.sendMail(mailOptions);
@@ -40,7 +74,7 @@ async function sendVerificationEmail(email, token) {
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
-    const decoded = jwt.verify(token, "yourSecretKey");
+    const decoded = jwt.verify(token, "CRazyPred102");
 
     const user = await User.findOne({ email: decoded.email });
     if (!user) return res.status(400).send("Invalid link");
@@ -48,6 +82,7 @@ const verifyEmail = async (req, res) => {
     user.isVerified = true;
     user.verificationToken = null; // Clear the token after verification
     await user.save();
+    await addUserToGlobalLeague(user._id);
 
     res.status(200).send("Email verified. You can now log in.");
   } catch (err) {
@@ -64,7 +99,7 @@ const resendVerification = async (req, res) => {
     if (user.isVerified) return res.status(400).send("Account is already verified");
 
     // Generate a new verification token
-    const newToken = jwt.sign({ email: user.email }, "yourSecretKey", { expiresIn: "1h" });
+    const newToken = jwt.sign({ email: user.email }, "CRazyPred102", { expiresIn: "1h" });
 
     // Update the user's verificationToken in the database
     user.verificationToken = newToken;
@@ -77,6 +112,62 @@ const resendVerification = async (req, res) => {
   } catch (err) {
     res.status(500).send("An error occurred while resending verification email.");
   }
+};
+
+const verifyOTPController = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ msg: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ msg: "Already verified" });
+    }
+
+    if (user.verificationCode !== otp) {
+      return res.status(400).json({ msg: "Invalid OTP" });
+    }
+
+    if (user.verificationCodeExpires < Date.now()) {
+      return res.status(400).json({ msg: "OTP expired" });
+    }
+
+    user.isVerified = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+
+    await user.save();
+
+    res.json({ msg: "Email verified successfully (OTP)" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const resendOTPController = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) return res.status(400).json({ msg: "User not found" });
+
+  const otp = generateOTP();
+
+  user.verificationCode = otp;
+  user.verificationCodeExpires = Date.now() + 10 * 60 * 1000;
+
+  await user.save();
+
+  const token = generateVerificationToken(email);
+  const verificationLink = `${process.env.FRONTEND_URL}/verify?token=${token}`;
+
+  await sendVerificationEmail(email, otp, verificationLink);
+
+  res.json({ msg: "OTP resent successfully" });
 };
 
 const registerController = async (req, res) => {
@@ -96,34 +187,25 @@ const registerController = async (req, res) => {
       return res.status(400).json({ msg: "User with the same email already exists" });
     }
     const hashedPassword = await bcryptjs.hash(password, 8);
+
+    // 🔥 Generate OTP
+    const otp = generateOTP();
     // const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationToken = jwt.sign({ email }, "yourSecretKey", { expiresIn: "1h" });
+    const verificationToken = jwt.sign({ email }, "CRazyPred102", { expiresIn: "10m" });
 
     const newUser = new User({
       email,
       password: hashedPassword,
       username,
       full_name,
+      verificationCode: otp,
+      verificationCodeExpires: Date.now() + 10 * 60 * 1000, // 10 min
     });
     const savedUser = await newUser.save();
 
-    // 2️⃣ Attach GLOBAL league
-    const globalLeague = await League.findOne({ type: "GLOBAL" });
+    sendVerificationEmail(email, verificationToken, otp); // Define this function
 
-    if (!globalLeague) {
-      return res.status(500).json({ msg: "Global league not found" });
-    }
-
-    // 3️⃣ Create LeagueMember entry
-    await LeagueMember.create({
-      userId: savedUser._id,
-      leagueId: globalLeague._id,
-      role: "MEMBER",
-    });
-
-    sendVerificationEmail(email, verificationToken); // Define this function
-
-    res.json(savedUser);
+    res.status(200).json({ msg: "Please check your email." });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -191,4 +273,6 @@ module.exports = {
   verifyEmail,
   resendVerification,
   userProfileController,
+  verifyOTPController,
+  resendOTPController,
 };

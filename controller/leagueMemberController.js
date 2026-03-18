@@ -138,7 +138,6 @@ exports.getLeagueLeaderboard = async (req, res) => {
     const fixtures = await FixtureModal.find({
       gameweek_id: gameweek_id,
     });
-    console.log(fixtures, "fixtures");
     const fixtureIds = fixtures.map((f) => f._id);
 
     // get predictions for that gameweek
@@ -159,7 +158,6 @@ exports.getLeagueLeaderboard = async (req, res) => {
 
       userPoints[userId] += p.points || 0;
     }
-    console.log({ userPoints, predictions });
     // attach points to every league member
 
     const leaderboard = members.map((m) => ({

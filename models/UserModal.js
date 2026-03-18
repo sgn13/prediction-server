@@ -21,12 +21,8 @@ const UserSchema = new Mongoose.Schema({
     required: true,
   },
   isVerified: { type: Boolean, default: false },
-  verificationToken: { type: String },
-  // role: {
-  //   type: String,
-  //   default: "Basic",
-  //   required: true,
-  // },
+  verificationCode: { type: String },
+  verificationCodeExpires: { type: Date },
 });
 
 const User = Mongoose.models.user || Mongoose.model("User", UserSchema);
