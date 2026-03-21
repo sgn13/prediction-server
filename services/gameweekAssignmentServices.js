@@ -4,9 +4,9 @@ const Fixture = require("../models/FixtureModal");
 const LeagueModal = require("../models/LeagueModal");
 const LeagueMatch = require("../models/LeagueMatchModal");
 
-async function assignOneMatchPerLeague(gameweekId = "69ad30937e9ad400f018830e") {
+async function assignOneMatchPerLeague(gameweekId = "69ad30937e9ad400f018830f") {
   const fixtures = await Fixture.find({
-    gameweek_id: "69ad30937e9ad400f018830e",
+    gameweek_id: "69ad30937e9ad400f018830f",
   }).sort({ kickoff_at: 1 });
 
   if (!fixtures.length) return;

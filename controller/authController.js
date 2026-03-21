@@ -74,7 +74,7 @@ async function sendVerificationEmail(email, verificationToken, otp) {
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
-    const decoded = jwt.verify(token, "CRazyPred102");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findOne({ email: decoded.email });
     if (!user) return res.status(400).send("Invalid link");
@@ -99,7 +99,7 @@ const resendVerification = async (req, res) => {
     if (user.isVerified) return res.status(400).send("Account is already verified");
 
     // Generate a new verification token
-    const newToken = jwt.sign({ email: user.email }, "CRazyPred102", { expiresIn: "1h" });
+    const newToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     // Update the user's verificationToken in the database
     user.verificationToken = newToken;
@@ -141,8 +141,9 @@ const verifyOTPController = async (req, res) => {
     user.verificationCodeExpires = undefined;
 
     await user.save();
+    await addUserToGlobalLeague(user._id);
 
-    res.json({ msg: "Email verified successfully (OTP)" });
+    res.status(200).json({ msg: "Email verified successfully (OTP)" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -191,7 +192,7 @@ const registerController = async (req, res) => {
     // 🔥 Generate OTP
     const otp = generateOTP();
     // const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationToken = jwt.sign({ email }, "CRazyPred102", { expiresIn: "10m" });
+    const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "10m" });
 
     const newUser = new User({
       email,

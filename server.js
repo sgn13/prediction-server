@@ -22,7 +22,15 @@ const cron = require("node-cron");
 const app = express();
 const port = 8000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // local dev (Vite)
+      "https://crazy-pred.onrender.com/", // production frontend
+    ],
+    credentials: true,
+  }),
+);
 app.use(bodyParser.json());
 
 const mongoURI = "mongodb://localhost:27017/prediction-db";
@@ -43,18 +51,18 @@ app.all("*", (req, res, next) => {
   });
 });
 
-cron.schedule("*/30 * * * *", async () => {
-  const fixtures = await Fixture.find({
-    status: "FINISHED",
-    predictions_processed: false,
-  });
-  console.log({ fixtures });
-  for (const fixture of fixtures) {
-    await processFixturePredictions(fixture._id);
+// cron.schedule("*/30 * * * *", async () => {
+//   const fixtures = await Fixture.find({
+//     status: "FINISHED",
+//     predictions_processed: false,
+//   });
+//   console.log({ fixtures });
+//   for (const fixture of fixtures) {
+//     await processFixturePredictions(fixture._id);
 
-    await Fixture.updateOne({ _id: fixture._id }, { predictions_processed: true });
-  }
-});
+//     await Fixture.updateOne({ _id: fixture._id }, { predictions_processed: true });
+//   }
+// });
 
 const API_KEY = "7ace331b4f8fce01db479ea8d7eeec3e";
 const API_BASE = "https://v3.football.api-sports.io";

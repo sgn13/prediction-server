@@ -12,8 +12,8 @@ const fetchFixturesFromApi = async (leagueId, season) => {
     const response = await axios.get("https://api.football-data.org/v4/matches", {
       params: {
         competitions: "2021",
-        dateFrom: "2026-03-11",
-        dateTo: "2026-03-19",
+        dateFrom: "2026-03-20",
+        dateTo: "2026-03-30",
       },
       headers: { "X-Auth-Token": "8dc5c264c4fa44a4aecd28169e5f3605" },
     });

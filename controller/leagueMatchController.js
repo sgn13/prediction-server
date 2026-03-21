@@ -228,7 +228,7 @@ exports.getLeagueMatchFixtures = async (req, res) => {
     // 2️⃣ Get assigned matches
     const matches = await LeagueMatchModal.find({
       fantasy_league_id: leagueId,
-      // gameweek_id: gameweekId,
+      gameweek_id: gameweekId,
     }).populate("match_id");
 
     res.status(200).json({ data: matches });
