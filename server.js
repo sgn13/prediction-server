@@ -33,7 +33,7 @@ app.use(
 );
 app.use(bodyParser.json());
 
-const mongoURI = "mongodb://localhost:27017/prediction-db";
+const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/prediction-db";
 
 app.use("/api/v1", authRoutes);
 app.use("/api/v1/user", userRoutes);
