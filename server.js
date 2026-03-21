@@ -26,7 +26,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173", // local dev (Vite)
-      "https://crazy-pred.onrender.com/", // production frontend
+      "https://crazy-pred.onrender.com", // production frontend
     ],
     credentials: true,
   }),
