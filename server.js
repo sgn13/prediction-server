@@ -130,7 +130,31 @@ const fetchAndStoreFixturesManually = async () => {
 
     for (const league of leagues) {
       const apiResponse = await fetchFixturesFromApi(league.id, league.season);
+
       if (apiResponse.data?.matches.length > 0) {
+        const firstMatch = apiResponse?.data?.matches?.[0];
+
+        const currentMatchday = firstMatch.matchday;
+
+        // deactivate all
+        await Gameweek.updateMany(
+          {
+            api_league_id: firstMatch.competition.id,
+            // season: firstMatch.season.id,
+          },
+          { isActive: false },
+        );
+
+        // activate current
+        await Gameweek.updateOne(
+          {
+            api_league_id: firstMatch.competition.id,
+            // season: firstMatch.season.id,
+            round_number: currentMatchday,
+          },
+          { isActive: true },
+        );
+
         await storeApiFixtures(apiResponse.data?.matches);
       }
     }
@@ -141,7 +165,7 @@ const fetchAndStoreFixturesManually = async () => {
   }
 };
 
-// fetchAndStoreFixturesManually();
+fetchAndStoreFixturesManually();
 
 // assignOneMatchPerLeague();
 

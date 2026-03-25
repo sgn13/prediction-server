@@ -111,12 +111,14 @@ exports.getLeagueLeaderboard = async (req, res) => {
   try {
     const { leagueId } = req.params;
     const { gameweek_id } = req.query;
+    console.log({ leagueId, gameweek_id });
 
     // get all league members
     const members = await LeagueMemberModal.find({ leagueId }).populate(
       "userId",
       "username full_name",
     );
+
     // if no gameweek → return overall table
     if (!gameweek_id) {
       const sorted = members.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -138,6 +140,7 @@ exports.getLeagueLeaderboard = async (req, res) => {
     const fixtures = await FixtureModal.find({
       gameweek_id: gameweek_id,
     });
+    // console.log({ fixtures });
     const fixtureIds = fixtures.map((f) => f._id);
 
     // get predictions for that gameweek
@@ -160,16 +163,20 @@ exports.getLeagueLeaderboard = async (req, res) => {
     }
     // attach points to every league member
 
-    const leaderboard = members.map((m) => ({
-      user: m.userId.name,
-      userId: m.userId._id,
-      points: userPoints[m.userId._id.toString()] || 0,
-      id: m._id,
-      username: m.userId.username,
-      full_name: m.userId.full_name,
-      totalPoints: m.totalPoints,
-      role: m.role,
-    }));
+    const leaderboard = members.map((m) => {
+      console.log(m, "llslsl");
+      return {
+        // user: m.userId.name,
+        userId: m.userId?._id,
+        points: userPoints[m.userId?._id.toString()] || 0,
+        // id: m._id,
+        username: m.userId?.username,
+        full_name: m.userId?.full_name,
+        totalPoints: m.totalPoints,
+        role: m.role,
+      };
+    });
+    // console.log({ members });
 
     // sort leaderboard
     leaderboard.sort((a, b) => b.points - a.points);
