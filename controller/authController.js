@@ -97,7 +97,6 @@ const resendVerification = async (req, res) => {
 
     if (!user) return res.status(400).send("User not found");
     if (user.isVerified) return res.status(400).send("Account is already verified");
-
     // Generate a new verification token
     const newToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
@@ -188,6 +187,7 @@ const registerController = async (req, res) => {
       return res.status(400).json({ msg: "User with the same email already exists" });
     }
     const hashedPassword = await bcryptjs.hash(password, 8);
+    console.log(process.env.JWT_SECRET, "sksk");
 
     // 🔥 Generate OTP
     const otp = generateOTP();
@@ -202,12 +202,14 @@ const registerController = async (req, res) => {
       verificationCode: otp,
       verificationCodeExpires: Date.now() + 10 * 60 * 1000, // 10 min
     });
+    console.log({ newUser });
     const savedUser = await newUser.save();
 
     sendVerificationEmail(email, verificationToken, otp); // Define this function
 
     res.status(200).json({ msg: "Please check your email." });
   } catch (err) {
+    console.log({ err });
     res.status(500).json({ error: err.message });
   }
 };

@@ -7,13 +7,26 @@ const axios = require("axios");
  * @param {Number} season - Season year, e.g., 2025
  * @returns {Array} Array of fixtures
  */
+
+const formatDate = (date) => {
+  return date.toISOString().split("T")[0]; // YYYY-MM-DD
+};
+
 const fetchFixturesFromApi = async (leagueId, season) => {
   try {
+    const today = new Date();
+
+    const futureDate = new Date();
+    futureDate.setDate(today.getDate() + 10);
+
+    const dateFrom = formatDate(today);
+    const dateTo = formatDate(futureDate);
+
     const response = await axios.get("https://api.football-data.org/v4/matches", {
       params: {
         competitions: "2021",
-        dateFrom: "2026-03-20",
-        dateTo: "2026-03-30",
+        dateFrom,
+        dateTo,
       },
       headers: { "X-Auth-Token": "8dc5c264c4fa44a4aecd28169e5f3605" },
     });

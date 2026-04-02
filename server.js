@@ -18,7 +18,7 @@ const { storeApiFixtures } = require("./controller/fixtureController");
 const { assignOneMatchPerLeague } = require("./services/gameweekAssignmentServices");
 const processFixturePredictions = require("./services/processFixtureServices");
 const cron = require("node-cron");
-
+require("dotenv").config();
 const app = express();
 const port = 8000;
 
@@ -51,18 +51,18 @@ app.all("*", (req, res, next) => {
   });
 });
 
-// cron.schedule("*/30 * * * *", async () => {
-//   const fixtures = await Fixture.find({
-//     status: "FINISHED",
-//     predictions_processed: false,
-//   });
-//   console.log({ fixtures });
-//   for (const fixture of fixtures) {
-//     await processFixturePredictions(fixture._id);
+cron.schedule("*/60 * * * *", async () => {
+  const fixtures = await Fixture.find({
+    status: "FINISHED",
+    predictions_processed: false,
+  });
+  console.log({ fixtures });
+  for (const fixture of fixtures) {
+    await processFixturePredictions(fixture._id);
 
-//     await Fixture.updateOne({ _id: fixture._id }, { predictions_processed: true });
-//   }
-// });
+    await Fixture.updateOne({ _id: fixture._id }, { predictions_processed: true });
+  }
+});
 
 const API_KEY = "7ace331b4f8fce01db479ea8d7eeec3e";
 const API_BASE = "https://v3.football.api-sports.io";
@@ -165,9 +165,10 @@ const fetchAndStoreFixturesManually = async () => {
   }
 };
 
-fetchAndStoreFixturesManually();
-
-// assignOneMatchPerLeague();
+cron.schedule("0 0 */5 * *", async () => {
+  await fetchAndStoreFixturesManually();
+  // await assignOneMatchPerLeague();
+});
 
 // Usage
 // fetchFixturesForGameweek(39, 2025, "Regular Season - 26");
