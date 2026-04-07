@@ -67,59 +67,6 @@ cron.schedule("*/60 * * * *", async () => {
 const API_KEY = "7ace331b4f8fce01db479ea8d7eeec3e";
 const API_BASE = "https://v3.football.api-sports.io";
 
-// async function fetchFixturesForGameweek(leagueId, season, roundName) {
-//   try {
-//     const { data } = await axios.get(`${API_BASE}/fixtures`, {
-//       // params: { league: leagueId, season },
-//       params: { date: "2026-02-23" },
-
-//       headers: { "x-apisports-key": API_KEY },
-//     });
-
-//     const fixtures = data.response;
-
-//     console.log({ data });
-
-//     for (const f of fixtures) {
-//       const gameweekNumberMatch = roundName.match(/\d+/);
-//       const roundNumber = gameweekNumberMatch ? Number(gameweekNumberMatch[0]) : 1;
-
-//       // get or create gameweek
-//       const gameweek = await Gameweek.findOne({
-//         api_league_id: leagueId,
-//         season,
-//         round_number: roundNumber,
-//       });
-
-//       if (!gameweek) continue;
-
-//       const fixtureData = {
-//         api_fixture_id: f.fixture.id,
-//         api_league_id: leagueId,
-//         season,
-//         gameweek_id: gameweek._id,
-//         home_team_name: f.teams.home.name,
-//         away_team_name: f.teams.away.name,
-//         kickoff_at: f.fixture.date,
-//         status_short: f.fixture.status.short,
-//         home_score: f.goals.home ?? 0,
-//         away_score: f.goals.away ?? 0,
-//       };
-
-//       console.log({ fixtureData });
-
-//       await Fixture.findOneAndUpdate({ api_fixture_id: f.fixture.id }, fixtureData, {
-//         upsert: true,
-//         new: true,
-//       });
-//     }
-
-//     console.log(`Fixtures synced for ${roundName} ✅`);
-//   } catch (err) {
-//     console.error("Error fetching fixtures:", err.response?.data || err.message);
-//   }
-// }
-
 const fetchAndStoreFixturesManually = async () => {
   try {
     // Example: leagues you want to fetch manually

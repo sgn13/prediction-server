@@ -71,6 +71,39 @@ async function sendVerificationEmail(email, verificationToken, otp) {
   await transporter.sendMail(mailOptions);
 }
 
+async function sendResetVerification(email, resetToken) {
+  // const transporter = nodemailer.createTransport({
+  //   service: "Gmail", // or your preferred email service
+  //   auth: {
+  //     user: "your-email@gmail.com",
+  //     pass: "your-email-password",
+  //   },
+  // });
+
+  // Looking to send emails in production? Check out our Email API/SMTP product!
+  var transporter = nodemailer.createTransport({
+    host: "sandbox.smtp.mailtrap.io",
+    port: 2525,
+    auth: {
+      user: "4fcc385c0570ee",
+      pass: "46764876832bd2",
+    },
+  });
+
+  const url = `http://localhost:5173/reset-password/${resetToken}`;
+  const mailOptions = {
+    from: "crazyprediction@gmail.com",
+    to: email,
+    subject: "Verify your account",
+    html: `
+  <h1>Welcome!</h1>
+  <p>We're excited to have you on board.</p>
+  <p>Please click <a href="${url}">here</a> to verify your account.</p>
+`,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
@@ -162,10 +195,11 @@ const resendOTPController = async (req, res) => {
 
   await user.save();
 
-  const token = generateVerificationToken(email);
-  const verificationLink = `${process.env.FRONTEND_URL}/verify?token=${token}`;
+  // const token = generateVerificationToken(email);
+  // const verificationLink = `${process.env.FRONTEND_URL}/verify?token=${token}`;
+  const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "10m" });
 
-  await sendVerificationEmail(email, otp, verificationLink);
+  await sendVerificationEmail(email, verificationToken, otp);
 
   res.json({ msg: "OTP resent successfully" });
 };
@@ -269,6 +303,52 @@ const userProfileController = async (req, res) => {
   });
 };
 
+const forgotPasswordController = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(400).json({ msg: "User not found" });
+
+  const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "10m" });
+
+  await user.save();
+
+  await sendResetVerification(email, resetToken);
+
+  res.json({ msg: "Password reset link sent" });
+};
+
+const resetPasswordController = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log({ decoded });
+
+    const user = await User.findOne({
+      email: decoded.email,
+    });
+
+    if (!user) return res.status(400).json({ msg: "Invalid token" });
+
+    if (user.resetPasswordExpires < Date.now()) {
+      return res.status(400).json({ msg: "Token expired" });
+    }
+
+    const hashedPassword = await bcryptjs.hash(password, 8);
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    res.json({ msg: "Password reset successful" });
+  } catch (err) {
+    console.log({ err });
+    res.status(400).json({ msg: "Invalid or expired token" });
+  }
+};
+
 module.exports = {
   registerController,
   loginController,
@@ -278,4 +358,6 @@ module.exports = {
   userProfileController,
   verifyOTPController,
   resendOTPController,
+  forgotPasswordController,
+  resetPasswordController,
 };
