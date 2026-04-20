@@ -51,12 +51,12 @@ app.all("*", (req, res, next) => {
   });
 });
 
-cron.schedule("*/60 * * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   const fixtures = await Fixture.find({
     status: "FINISHED",
     predictions_processed: false,
   });
-  console.log({ fixtures });
+  console.log({ fixtures: Fixture.find() });
   for (const fixture of fixtures) {
     await processFixturePredictions(fixture._id);
 
@@ -82,6 +82,12 @@ const fetchAndStoreFixturesManually = async () => {
         const firstMatch = apiResponse?.data?.matches?.[0];
 
         const currentMatchday = firstMatch.matchday;
+        const foundGameweek = await Gameweek.find({
+          round_number: currentMatchday,
+        });
+        if (foundGameweek) {
+          assignOneMatchPerLeague(foundGameweek?.[0]?._id);
+        }
 
         // deactivate all
         await Gameweek.updateMany(
@@ -111,15 +117,14 @@ const fetchAndStoreFixturesManually = async () => {
     console.error("Error fetching fixtures manually:", err.message);
   }
 };
-
-cron.schedule("0 0 */5 * *", async () => {
-  await fetchAndStoreFixturesManually();
-  // await assignOneMatchPerLeague();
-});
+fetchAndStoreFixturesManually();
+// cron.schedule("0 0 */5 * *", async () => {
+//   await fetchAndStoreFixturesManually();
+//   // await assignOneMatchPerLeague();
+// });
 
 // Usage
 // fetchFixturesForGameweek(39, 2025, "Regular Season - 26");
-
 async function connectMongoDB() {
   try {
     await mongoose.connect(mongoURI, {

@@ -15,9 +15,10 @@ const formatDate = (date) => {
 const fetchFixturesFromApi = async (leagueId, season) => {
   try {
     const today = new Date();
+    today.setDate(today.getDate() - 3);
 
     const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 10);
+    futureDate.setDate(today.getDate() + 7);
 
     const dateFrom = formatDate(today);
     const dateTo = formatDate(futureDate);
